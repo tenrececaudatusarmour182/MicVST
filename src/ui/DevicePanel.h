@@ -42,6 +42,7 @@ private:
     juce::TextButton advancedBtn { "Advanced" };
     juce::Label    srLabel  { {}, "Sample rate" }, bufLabel { {}, "Buffer size" };
     juce::ComboBox srBox, bufBox;
+    juce::Label    statusLabel;   // Active / Samplerate / Latenz (nur unter Advanced)
 
     juce::Array<double> sampleRates;   // ComboBox-Index -> Wert
     juce::Array<int>    bufferSizes;

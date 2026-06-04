@@ -9,7 +9,7 @@ class MicVSTApplication : public juce::JUCEApplication
 {
 public:
     const juce::String getApplicationName() override    { return "MicVST"; }
-    const juce::String getApplicationVersion() override { return "1.0.0"; }
+    const juce::String getApplicationVersion() override { return "1.0.1"; }
     bool moreThanOneInstanceAllowed() override          { return false; }
 
     void initialise (const juce::String& commandLine) override

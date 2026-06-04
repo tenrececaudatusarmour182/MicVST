@@ -19,6 +19,11 @@ DevicePanel::DevicePanel (AudioEngine& e) : engine (e)
     addChildComponent (srLabel);  addChildComponent (srBox);
     addChildComponent (bufLabel); addChildComponent (bufBox);
 
+    statusLabel.setJustificationType (juce::Justification::centredLeft);
+    statusLabel.setColour (juce::Label::textColourId, juce::Colours::grey);
+    statusLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
+    addChildComponent (statusLabel);
+
     advancedBtn.setClickingTogglesState (true);
     advancedBtn.onClick = [this] { toggleAdvanced(); };
 
@@ -90,6 +95,18 @@ void DevicePanel::refresh()
     srBox.setEnabled  (! sampleRates.isEmpty());
     bufBox.setEnabled (! bufferSizes.isEmpty());
 
+    // Status (Active / Samplerate / Latenz) für die Advanced-Anzeige.
+    juce::String st = engine.isRunning() ? juce::String ("Active")
+                                         : juce::String ("Idle - device disconnected");
+    if (auto* dev = dm.getCurrentAudioDevice())
+    {
+        st << "   |   " << juce::String (dev->getCurrentSampleRate(), 0) << " Hz";
+        const double lat = (dev->getInputLatencyInSamples() + dev->getOutputLatencyInSamples()
+                            + dev->getCurrentBufferSizeSamples()) / dev->getCurrentSampleRate() * 1000.0;
+        st << "   |   latency ~" << juce::String (lat, 1) << " ms";
+    }
+    statusLabel.setText (st, juce::dontSendNotification);
+
     updating = false;
 }
 
@@ -129,6 +146,7 @@ void DevicePanel::toggleAdvanced()
     srBox.setVisible (advancedVisible);
     bufLabel.setVisible (advancedVisible);
     bufBox.setVisible (advancedVisible);
+    statusLabel.setVisible (advancedVisible);
     resized();
 }
 
@@ -166,5 +184,6 @@ void DevicePanel::resized()
         srLabel.setBounds (srRow.removeFromLeft (labelW));   srBox.setBounds (srRow);
         auto bufRow = row();
         bufLabel.setBounds (bufRow.removeFromLeft (labelW)); bufBox.setBounds (bufRow);
+        statusLabel.setBounds (row());   // Status-Zeile unter den Dropdowns
     }
 }

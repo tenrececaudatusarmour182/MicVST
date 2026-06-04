@@ -22,7 +22,7 @@ Mic  →  MicVST (your VST3 chain)  →  VB-Cable (CABLE Input → CABLE Output)
 
 Grab the latest portable build — **no installer, no dependencies**, just run the `.exe`:
 
-➡️ **[Download MicVST.exe](https://github.com/philipz794/MicVST/releases/latest/download/MicVST.exe)**
+**[Download MicVST.exe](https://github.com/philipz794/MicVST/releases/latest/download/MicVST.exe)**
 
 (Statically linked, x64. No Visual C++ Redistributable required.)
 

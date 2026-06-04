@@ -14,15 +14,17 @@ public:
     void resized() override;
 private:
     void timerCallback() override;
-    void updateStatus();
     void updateCableHint();   // zeigt den VB-Cable-Hinweis, wenn kein virtuelles Kabel installiert ist
+    void showHowTo();         // öffnet das How-To-Fenster
     AudioEngine& engine;
     std::unique_ptr<DevicePanel> devicePanel;
     LevelMeterComponent inMeter, outMeter;
     DbScaleComponent dbScale;
     juce::Label inLabel { {}, "In" }, outLabel { {}, "Out" };
     std::unique_ptr<PluginListView> pluginList;
-    juce::Label statusLabel;
+    juce::HyperlinkButton versionLink;   // klickbare Versionsnummer -> GitHub-Repo
+    juce::TextButton howToBtn { "How To" };
+    std::unique_ptr<juce::DocumentWindow> howToWindow;
     juce::ToggleButton autostartToggle { "Run at startup" };
     juce::HyperlinkButton cableHint { "No virtual audio cable found - click to install VB-Cable",
                                       juce::URL ("https://vb-audio.com/Cable/") };
