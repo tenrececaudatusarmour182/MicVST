@@ -11,7 +11,7 @@ Think of it as a minimal alternative to VoiceMeeter / Wave Link when all you wan
 *one input, plugins on it, out as a virtual mic.*
 
 ```
-Mic  →  MicVST (your VST3 chain)  →  VB-Cable (CABLE Input → CABLE Output)  →  Discord / OBS / Zoom / …
+Mic  →  MicVST (your VST3 chain)  →  VB-Cable (CABLE Input → CABLE Output)  →  Discord...
 ```
 
 ![MicVST](assets/screenshot.png)
