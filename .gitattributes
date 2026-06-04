@@ -1,0 +1,8 @@
+# Normalize line endings in the repo (LF), check out native on each platform.
+# Silences the "LF will be replaced by CRLF" warnings on Windows.
+* text=auto
+
+# Treat these as binary (never normalize).
+*.png binary
+*.ico binary
+*.exe binary

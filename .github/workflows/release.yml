@@ -1,0 +1,38 @@
+name: release
+
+# Push a tag like v1.0.0 to build the portable exe and publish a release with it.
+on:
+  push:
+    tags: [ 'v*' ]
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build
+        run: cmake --build build --config Release --target MicVST
+
+      - name: SHA256
+        id: sha
+        shell: pwsh
+        run: echo "hash=$((Get-FileHash build/MicVST_artefacts/Release/MicVST.exe -Algorithm SHA256).Hash)" >> $env:GITHUB_OUTPUT
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/MicVST_artefacts/Release/MicVST.exe
+          body: |
+            **MicVST ${{ github.ref_name }}** — portable Windows build (x64, statically linked; no installer, no Visual C++ Redistributable needed).
+
+            **Requires a virtual audio cable** — the free [VB-Cable](https://vb-audio.com/Cable/) is recommended (auto-detected). See the [README](https://github.com/philipz794/MicVST#readme) for setup.
+
+            The `.exe` is unsigned, so Windows SmartScreen may warn — *More info → Run anyway*.
+
+            **SHA-256** (`MicVST.exe`): `${{ steps.sha.outputs.hash }}`
