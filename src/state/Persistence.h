@@ -16,6 +16,12 @@ struct MicVSTState
     int    bufferSize = 128;
     juce::Array<PluginEntryState> plugins;
     juce::StringArray pluginFolders;   // zusätzliche VST3-Suchordner
+    juce::String windowState;          // DocumentWindow::getWindowStateAsString() (Größe/Position)
+
+    // Opt-in Auto-Update-Check (siehe UpdateChecker). Default: aus, nie gefragt.
+    bool updateCheckEnabled = false;   // Checkbox-Zustand
+    bool updateCheckAsked   = false;   // Erststart-Popup schon gezeigt?
+    juce::String lastNotifiedVersion;  // letzte per Tray-Bubble gemeldete Version (Dedup)
 };
 
 juce::ValueTree  toValueTree (const MicVSTState&);

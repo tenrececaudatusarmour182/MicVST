@@ -29,7 +29,12 @@ namespace
             "5)  That's it\n"
             "    Settings are saved automatically. Closing the window keeps MicVST running in the\n"
             "    tray (right-click the tray icon for options). Enable \"Run at startup\" to launch\n"
-            "    it silently on boot.";
+            "    it silently on boot.\n"
+            "\n"
+            "Auto-Update-Check\n"
+            "    With \"Auto-Update-Check\" enabled, MicVST asks GitHub once on each start whether a\n"
+            "    newer version exists. No data is collected and there is no auto-installer - if an\n"
+            "    update is found, the version number turns into a link to the download.";
     }
 
     const char* const kRepoUrl = "https://github.com/philipz794/MicVST";
@@ -116,12 +121,22 @@ MainComponent::MainComponent (AudioEngine& e) : engine (e)
     howToBtn.setTooltip ("Quick setup guide");
     howToBtn.onClick = [this] { showHowTo(); };
 
-    versionLink.setButtonText ("v" + juce::JUCEApplication::getInstance()->getApplicationVersion());
+    currentVersion = juce::JUCEApplication::getInstance()->getApplicationVersion();
+    versionLink.setButtonText ("v" + currentVersion);
     versionLink.setURL (juce::URL (kRepoUrl));
     versionLink.setTooltip ("MicVST on GitHub");
     versionLink.setJustificationType (juce::Justification::centredLeft);
     versionLink.setColour (juce::HyperlinkButton::textColourId, juce::Colours::grey);
     addAndMakeVisible (versionLink);
+
+    updateToggle.setTooltip ("Check GitHub on startup whether a newer version exists (opt-in, no data collected)");
+    updateToggle.onClick = [this]
+    {
+        const bool on = updateToggle.getToggleState();
+        if (onUpdateCheckToggled) onUpdateCheckToggled (on);
+        if (on) startUpdateCheck();
+    };
+    addAndMakeVisible (updateToggle);
 
     addAndMakeVisible (autostartToggle);
     autostartToggle.setTooltip ("Launch MicVST silently into the tray when Windows starts");
@@ -162,6 +177,36 @@ void MainComponent::showHowTo()
     howToWindow->toFront (true);
 }
 
+void MainComponent::setUpdateCheckEnabled (bool on, bool runIfOn)
+{
+    updateToggle.setToggleState (on, juce::dontSendNotification);
+    if (on && runIfOn) startUpdateCheck();
+}
+
+void MainComponent::startUpdateCheck()
+{
+    // SafePointer: falls die Komponente vor dem (asynchronen) Ergebnis zerstört wird,
+    // läuft der Callback ins Leere statt in einen Dangling-this.
+    juce::Component::SafePointer<MainComponent> safe (this);
+    updateChecker.start (currentVersion, [safe] (UpdateChecker::Result r)
+    {
+        if (auto* self = safe.getComponent())
+        {
+            self->showUpdateAvailable (r.latestVersion, r.releaseUrl);
+            if (self->onUpdateFound) self->onUpdateFound (r.latestVersion, r.releaseUrl);
+        }
+    });
+}
+
+void MainComponent::showUpdateAvailable (const juce::String& latestVersion, const juce::String& url)
+{
+    versionLink.setButtonText ("v" + currentVersion + " > Update available!");
+    versionLink.setURL (juce::URL (url));
+    versionLink.setTooltip ("MicVST " + latestVersion + " is available on GitHub - click to open");
+    versionLink.setColour (juce::HyperlinkButton::textColourId, juce::Colours::orange);
+    resized();   // Text ist breiter -> Layout der unteren Leiste auffrischen
+}
+
 void MainComponent::updateCableHint()
 {
     // Hinweis nur zeigen, wenn KEIN virtuelles Kabel installiert ist. Wird bei Geräte-
@@ -178,10 +223,16 @@ void MainComponent::resized()
 {
     auto r = getLocalBounds().reduced (8);
     auto bottomRow = r.removeFromBottom (24);
+    // Rechts, von außen nach innen: Run at startup (Rand) | Auto-Update-Check | How To.
     autostartToggle.setBounds (bottomRow.removeFromRight (120));
     bottomRow.removeFromRight (6);
+    updateToggle.setBounds (bottomRow.removeFromRight (150));
+    bottomRow.removeFromRight (6);
     howToBtn.setBounds (bottomRow.removeFromRight (80));
-    versionLink.setBounds (bottomRow.removeFromLeft (52));   // klickbare Version unten links
+    // Links die klickbare Version: Breite an den Text anpassen, sonst ist der leere Reserve-
+    // Platz (für "> Update available!") mit-klickbar.
+    versionLink.setBounds (bottomRow);
+    versionLink.changeWidthToFitText();
     r.removeFromBottom (4);
 
     // Horizontale Meter: In-Zeile, Out-Zeile, gemeinsame dB-Skala darunter.
@@ -204,7 +255,10 @@ void MainComponent::resized()
         r.removeFromTop (4);
     }
 
-    auto bottom = r.removeFromBottom (juce::jmax (180, r.getHeight() / 2));
-    pluginList->setBounds (bottom);
-    devicePanel->setBounds (r);
+    // DevicePanel feste Höhe (Input + Output + Info-Zeile = 3 Zeilen à 26 + 2 Lücken à 4),
+    // die Plugin-Liste bekommt den ganzen Rest -> mehr Fensterhöhe verlängert die Liste.
+    constexpr int devicePanelH = 86;
+    devicePanel->setBounds (r.removeFromTop (devicePanelH));
+    r.removeFromTop (8);
+    pluginList->setBounds (r);
 }

@@ -68,6 +68,8 @@ boot (no window, engine running). For a stable setup, copy the `.exe` to a fixed
 - Scans the standard VST3 folder; **add custom VST3 folders** via “+ Plugin → Add VST3 folder…”
   (a plugin that crashes the scan is remembered and skipped next time)
 - Persistent settings (`%APPDATA%\MicVST\config.xml`), low latency, silent **tray autostart**
+- Optional, **opt-in update check** (off by default): one request to the GitHub releases API on
+  startup; no telemetry, no auto-installer
 - Single portable `.exe`, no install, no runtime dependencies
 
 ## Build from source
@@ -102,6 +104,17 @@ machine without the Visual C++ Redistributable.
 - The output device is just a normal render endpoint — pointing it at a virtual cable’s *input*
   endpoint lets the cable’s driver loop the audio to its *output* (capture) endpoint, which other
   apps read as a microphone. No special “output plugin” needed.
+
+## Latency
+
+MicVST adds only the **smallest buffer necessary** to run your VST3 chain — typically one 10 ms block (480 samples at 48 kHz), the standard Windows shared-audio period. There's no extra buffering on top: audio comes in, goes through your plugins, and goes straight out.
+
+A few things worth knowing:
+
+- **The buffer size is a single fixed value** (e.g. 480) because MicVST uses **WASAPI shared mode** — the same low-overhead path Windows uses for everything else. Windows sets one engine period for shared audio, so there's nothing to tune there, and nothing is being wasted. MicVST simply shows it (with the live end-to-end latency) under the device list.
+- **Total latency you hear is mostly downstream of MicVST.** The signal path is `Mic → MicVST → virtual cable → your app (Discord/OBS/…)`. The virtual cable and the receiving app each read through Windows shared audio too, and the cable has its own buffering. If you want to trim the cable's part, VB-Cable exposes a latency / internal-sample-rate setting in its own control panel (`VBCABLE_ControlPanel.exe`).
+- **For talking into Discord/OBS/Zoom, latency is inaudible** — your microphone signal travels one way to your listeners, so a few milliseconds never matter. (Low buffer sizes only matter when you monitor *yourself* live or play an instrument in real time, which isn't what MicVST is for.)
+- **ASIO / ASIO4All won't help here.** ASIO is built for a single exclusive in-and-out device and doesn't fit a mic-in / virtual-cable-out setup — and the receiving app would still read through shared audio anyway. MicVST is already on the most direct path Windows offers for this job.
 
 ## Notes
 

@@ -2,12 +2,11 @@
 
 DevicePanel::DevicePanel (AudioEngine& e) : engine (e)
 {
-    for (auto* l : { &inLabel, &outLabel, &srLabel, &bufLabel })
+    for (auto* l : { &inLabel, &outLabel })
         l->setJustificationType (juce::Justification::centredLeft);
 
     addAndMakeVisible (inLabel);  addAndMakeVisible (inBox);
     addAndMakeVisible (outLabel); addAndMakeVisible (outBox);
-    addAndMakeVisible (advancedBtn);
 
     inInfo.setTooltip ("Select your microphone here");
     outInfo.setTooltip ("Select \"CABLE Input\" here, "
@@ -15,29 +14,22 @@ DevicePanel::DevicePanel (AudioEngine& e) : engine (e)
     addAndMakeVisible (inInfo);
     addAndMakeVisible (outInfo);
 
-    // Advanced-Controls starten versteckt (Sichtbarkeit über den Toggle).
-    addChildComponent (srLabel);  addChildComponent (srBox);
-    addChildComponent (bufLabel); addChildComponent (bufBox);
-
     statusLabel.setJustificationType (juce::Justification::centredLeft);
     statusLabel.setColour (juce::Label::textColourId, juce::Colours::grey);
     statusLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
-    addChildComponent (statusLabel);
-
-    advancedBtn.setClickingTogglesState (true);
-    advancedBtn.onClick = [this] { toggleAdvanced(); };
+    addAndMakeVisible (statusLabel);
 
     inBox.onChange  = [this] { apply(); };
     outBox.onChange = [this] { apply(); };
-    srBox.onChange  = [this] { apply(); };
-    bufBox.onChange = [this] { apply(); };
 
     engine.getDeviceManager().addChangeListener (this);
     refresh();
+    startTimer (500);   // Info-Zeile (v. a. Geräte-/Plugin-Latenz) live halten
 }
 
 DevicePanel::~DevicePanel()
 {
+    stopTimer();
     engine.getDeviceManager().removeChangeListener (this);
 }
 
@@ -46,16 +38,17 @@ void DevicePanel::changeListenerCallback (juce::ChangeBroadcaster*)
     refresh();   // Gerät extern geändert (z. B. ab-/angesteckt) -> Combos spiegeln
 }
 
+void DevicePanel::timerCallback()
+{
+    updateStatus();   // nur die Info-Zeile; Combos nicht anfassen (User könnte gerade wählen)
+}
+
 void DevicePanel::refresh()
 {
     updating = true;   // verhindert, dass das Befüllen apply() auslöst
 
     inBox.clear (juce::dontSendNotification);
     outBox.clear (juce::dontSendNotification);
-    srBox.clear (juce::dontSendNotification);
-    bufBox.clear (juce::dontSendNotification);
-    sampleRates.clear();
-    bufferSizes.clear();
 
     auto& dm = engine.getDeviceManager();
     const auto setup = dm.getAudioDeviceSetup();
@@ -75,39 +68,32 @@ void DevicePanel::refresh()
                               juce::dontSendNotification);
     }
 
-    if (auto* dev = dm.getCurrentAudioDevice())
-    {
-        for (auto rate : dev->getAvailableSampleRates()) sampleRates.add (rate);
-        for (int i = 0; i < sampleRates.size(); ++i)
-            srBox.addItem (juce::String ((int) sampleRates[i]) + " Hz", i + 1);
-        const double curSr = dev->getCurrentSampleRate();
-        for (int i = 0; i < sampleRates.size(); ++i)
-            if (std::abs (sampleRates[i] - curSr) < 1.0) srBox.setSelectedId (i + 1, juce::dontSendNotification);
+    updateStatus();
 
-        for (auto size : dev->getAvailableBufferSizes()) bufferSizes.add (size);
-        for (int i = 0; i < bufferSizes.size(); ++i)
-            bufBox.addItem (juce::String (bufferSizes[i]), i + 1);
-        const int curBuf = dev->getCurrentBufferSizeSamples();
-        for (int i = 0; i < bufferSizes.size(); ++i)
-            if (bufferSizes[i] == curBuf) bufBox.setSelectedId (i + 1, juce::dontSendNotification);
-    }
+    updating = false;
+}
 
-    srBox.setEnabled  (! sampleRates.isEmpty());
-    bufBox.setEnabled (! bufferSizes.isEmpty());
+void DevicePanel::updateStatus()
+{
+    auto& dm = engine.getDeviceManager();
 
-    // Status (Active / Samplerate / Latenz) für die Advanced-Anzeige.
     juce::String st = engine.isRunning() ? juce::String ("Active")
                                          : juce::String ("Idle - device disconnected");
     if (auto* dev = dm.getCurrentAudioDevice())
     {
-        st << "   |   " << juce::String (dev->getCurrentSampleRate(), 0) << " Hz";
+        const double sr  = dev->getCurrentSampleRate();
+        const int    buf = dev->getCurrentBufferSizeSamples();
+        st << "   |   " << juce::String (sr, 0) << " Hz";
+        st << "   |   buffer " << juce::String (buf);
+
+        // Ende-zu-Ende durch MicVST: Geräte-Latenz (In+Out) + ein Block + Plugin-Latenz
+        // des Graphen (Lookahead-Plugins melden diese via getLatencySamples()).
+        const int    pluginLatency = engine.getGraph().getLatencySamples();
         const double lat = (dev->getInputLatencyInSamples() + dev->getOutputLatencyInSamples()
-                            + dev->getCurrentBufferSizeSamples()) / dev->getCurrentSampleRate() * 1000.0;
-        st << "   |   latency ~" << juce::String (lat, 1) << " ms";
+                            + buf + pluginLatency) / sr * 1000.0;
+        st << "   |   latency " << juce::String (lat, 1) << " ms";
     }
     statusLabel.setText (st, juce::dontSendNotification);
-
-    updating = false;
 }
 
 void DevicePanel::apply()
@@ -128,26 +114,8 @@ void DevicePanel::apply()
     const int oid = outBox.getSelectedId();
     if (oid >= 2 && juce::isPositiveAndBelow (oid - 2, outs.size())) output = outs[oid - 2];
 
-    double sr = 0.0;
-    const int sid = srBox.getSelectedId();
-    if (sid >= 1 && sid <= sampleRates.size()) sr = sampleRates[sid - 1];
-
-    int buf = 0;
-    const int bid = bufBox.getSelectedId();
-    if (bid >= 1 && bid <= bufferSizes.size()) buf = bufferSizes[bid - 1];
-
-    engine.setDeviceConfig (input, output, sr, buf);
-}
-
-void DevicePanel::toggleAdvanced()
-{
-    advancedVisible = advancedBtn.getToggleState();
-    srLabel.setVisible (advancedVisible);
-    srBox.setVisible (advancedVisible);
-    bufLabel.setVisible (advancedVisible);
-    bufBox.setVisible (advancedVisible);
-    statusLabel.setVisible (advancedVisible);
-    resized();
+    // Samplerate/Buffer bleiben unverändert (0/0): im Shared-Modus gibt Windows sie vor.
+    engine.setDeviceConfig (input, output, 0.0, 0);
 }
 
 void DevicePanel::resized()
@@ -162,7 +130,7 @@ void DevicePanel::resized()
         return a;
     };
 
-    // Label + "i"-Icon in der Label-Spalte, danach die ComboBox.
+    // Label + "?"-Icon in der Label-Spalte, danach die ComboBox.
     auto labelWithInfo = [labelW] (juce::Rectangle<int> r, juce::Label& lbl, InfoIcon& info)
     {
         auto col = r.removeFromLeft (labelW);
@@ -176,14 +144,5 @@ void DevicePanel::resized()
     auto outRow = row();
     outBox.setBounds (labelWithInfo (outRow, outLabel, outInfo));
 
-    advancedBtn.setBounds (row().removeFromLeft (120));
-
-    if (advancedVisible)
-    {
-        auto srRow = row();
-        srLabel.setBounds (srRow.removeFromLeft (labelW));   srBox.setBounds (srRow);
-        auto bufRow = row();
-        bufLabel.setBounds (bufRow.removeFromLeft (labelW)); bufBox.setBounds (bufRow);
-        statusLabel.setBounds (row());   // Status-Zeile unter den Dropdowns
-    }
+    statusLabel.setBounds (row());   // dauerhafte Info-Zeile unter den Geräten
 }

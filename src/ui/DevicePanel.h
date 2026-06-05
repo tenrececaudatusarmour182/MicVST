@@ -2,7 +2,7 @@
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "audio/AudioEngine.h"
 
-// Kleines "i"-Icon, das bei Hover einen Hilfetext zeigt (via TooltipWindow im MainComponent).
+// Kleines "?"-Icon, das bei Hover einen Hilfetext zeigt (via TooltipWindow im MainComponent).
 struct InfoIcon : juce::Component, juce::SettableTooltipClient
 {
     void paint (juce::Graphics& g) override
@@ -19,10 +19,14 @@ struct InfoIcon : juce::Component, juce::SettableTooltipClient
 };
 
 // Kompakte Geräteauswahl: Input zuerst, dann Output (Output kennt "(none)").
-// Darunter ein "Advanced"-Toggle, der Samplerate + Buffergröße ein-/ausklappt.
+// Darunter eine dauerhaft sichtbare Info-Zeile (Active / Samplerate / Buffer / Latenz).
+// Samplerate und Buffergröße sind bewusst REINE Readouts: im WASAPI-Shared-Modus gibt
+// Windows genau eine Mixer-Periode vor, es gibt also nichts einzustellen.
 // Bewusst KEIN Input-Pegelmeter (oben gibt es den großen) und keine Kanal-Listen
 // (MicVST verwaltet die Kanäle selbst auf Stereo).
-class DevicePanel : public juce::Component, private juce::ChangeListener
+class DevicePanel : public juce::Component,
+                    private juce::ChangeListener,
+                    private juce::Timer
 {
 public:
     explicit DevicePanel (AudioEngine&);
@@ -31,22 +35,16 @@ public:
 
 private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
-    void refresh();        // Combos aus dem aktuellen Setup neu füllen
+    void timerCallback() override;
+    void refresh();        // Input/Output-Combos aus dem aktuellen Setup neu füllen
+    void updateStatus();   // nur die Info-Zeile (Active / Samplerate / Buffer / Latenz)
     void apply();          // aktuelle Auswahl -> AudioEngine
-    void toggleAdvanced();
 
     AudioEngine& engine;
     juce::Label    inLabel  { {}, "Input" },  outLabel { {}, "Output" };
     InfoIcon       inInfo, outInfo;
     juce::ComboBox inBox, outBox;
-    juce::TextButton advancedBtn { "Advanced" };
-    juce::Label    srLabel  { {}, "Sample rate" }, bufLabel { {}, "Buffer size" };
-    juce::ComboBox srBox, bufBox;
-    juce::Label    statusLabel;   // Active / Samplerate / Latenz (nur unter Advanced)
+    juce::Label    statusLabel;   // Active / Samplerate / Buffer / Latenz (immer sichtbar)
 
-    juce::Array<double> sampleRates;   // ComboBox-Index -> Wert
-    juce::Array<int>    bufferSizes;
-
-    bool advancedVisible = false;
-    bool updating = false;             // Re-entrancy-Guard beim Befüllen
+    bool updating = false;        // Re-entrancy-Guard beim Befüllen
 };

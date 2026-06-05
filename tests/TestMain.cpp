@@ -116,6 +116,11 @@ struct PersistenceTest : juce::UnitTest
         MicVSTState s;
         s.inputDevice = "Microphone"; s.outputDevice = "CABLE Output";
         s.sampleRate = 48000.0; s.bufferSize = 128;
+        s.pluginFolders.add ("C:/My VST3");
+        s.windowState = "0 0 600 480";
+        s.updateCheckEnabled = true;
+        s.updateCheckAsked = true;
+        s.lastNotifiedVersion = "1.0.3";
 
         PluginEntryState p;
         p.fileOrId = "C:/VST3/Pro-Q 3.vst3";
@@ -131,6 +136,12 @@ struct PersistenceTest : juce::UnitTest
         expectEquals (r.outputDevice, s.outputDevice);
         expectEquals (r.sampleRate, 48000.0);
         expectEquals (r.bufferSize, 128);
+        expectEquals (r.pluginFolders.size(), 1);
+        expectEquals (r.pluginFolders[0], juce::String ("C:/My VST3"));
+        expectEquals (r.windowState, juce::String ("0 0 600 480"));
+        expect (r.updateCheckEnabled == true);
+        expect (r.updateCheckAsked == true);
+        expectEquals (r.lastNotifiedVersion, juce::String ("1.0.3"));
         expectEquals (r.plugins.size(), 1);
         expectEquals (r.plugins[0].fileOrId, p.fileOrId);
         expect (r.plugins[0].bypassed == true);

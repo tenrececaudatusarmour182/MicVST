@@ -5,10 +5,11 @@
 // Plugin-Kette als Liste. Pro Zeile (von links nach rechts):
 //   - Drag-Handle (Punkte) zum Umsortieren per Drag&Drop,
 //   - Plugin-Name (Doppelklick öffnet den Editor),
+//   - gemeldete Latenz des Plugins (getLatencySamples),
 //   - Bypass-Schalter,
 //   - Mülleimer-Icon zum Entfernen.
 // Oben ein "+ Plugin"-Button (Dropdown aus KnownPluginList + internes Mono->Stereo).
-class PluginListView : public juce::Component
+class PluginListView : public juce::Component, private juce::Timer
 {
 public:
     explicit PluginListView (AudioEngine& engine);
@@ -16,6 +17,8 @@ public:
 
 private:
     static constexpr int rowH = 30;
+
+    void timerCallback() override;      // hält die angezeigte Plugin-Latenz aktuell
 
     void showAddMenu();
     void showFolderMenu();              // Custom-VST3-Ordner verwalten (hinzufügen/entfernen)

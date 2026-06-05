@@ -8,9 +8,11 @@ Only the **latest release** of MicVST receives fixes. Please update to the newes
 ## Scope
 
 MicVST is a small **local** Windows app: it processes audio between local devices and a virtual
-audio cable. It has **no network services, no telemetry, and no auto-update mechanism**, so the
-attack surface is small. The main areas of interest are third-party VST3 plugins it loads and the
-config/log files it writes under `%APPDATA%\MicVST\`.
+audio cable. It has **no telemetry and no auto-installer**. The only network access is an
+**optional, opt-in update check** (off by default): when enabled, on startup it makes a single
+request to the public GitHub releases API to see whether a newer version exists. The main areas of
+interest are third-party VST3 plugins it loads and the config/log files it writes under
+`%APPDATA%\MicVST\`.
 
 ## Reporting a vulnerability
 

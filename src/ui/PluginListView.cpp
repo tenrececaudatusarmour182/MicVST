@@ -77,12 +77,31 @@ void PluginListView::Row::paint (juce::Graphics& g)
         for (int cyn = 0; cyn < 3; ++cyn)
             g.fillEllipse ((float) (8 + cxn * 6), (float) (b.getCentreY() - 6 + cyn * 6), 2.6f, 2.6f);
 
-    // Name.
+    // Latenz-Spalte links vom Bypass: gemeldete Plugin-Latenz in ms (Lookahead etc.).
+    constexpr int latW = 72;
+    const int latRight = bypassBtn.getX() - 8;
+    const int latLeft  = latRight - latW;
+
+    juce::String latText;
+    if (auto* node = owner.engine.getGraph().getNodeForId (e.node))
+        if (auto* proc = node->getProcessor())
+        {
+            auto* dev = owner.engine.getDeviceManager().getCurrentAudioDevice();
+            const double sr = dev != nullptr ? dev->getCurrentSampleRate() : 48000.0;
+            const double ms = sr > 0.0 ? (double) proc->getLatencySamples() / sr * 1000.0 : 0.0;
+            latText = juce::String (ms, 1) + " ms";
+        }
+
+    // Name (auf den Platz links der Latenz-Spalte begrenzt).
     const auto name = e.fileOrId == PluginChain::monoToStereoId ? juce::String ("Mono -> Stereo")
                     : e.fileOrId == PluginChain::stereoToMonoId ? juce::String ("Stereo -> Mono")
                     : juce::File (e.fileOrId).getFileNameWithoutExtension();
     g.setColour (e.bypassed ? juce::Colours::grey : juce::Colours::white);
-    g.drawText (name, 28, 0, bypassBtn.getX() - 32, b.getHeight(), juce::Justification::centredLeft);
+    g.drawText (name, 28, 0, latLeft - 6 - 28, b.getHeight(), juce::Justification::centredLeft);
+
+    g.setColour (juce::Colours::grey);
+    g.setFont (juce::Font (juce::FontOptions (12.0f)));
+    g.drawText (latText, latLeft, 0, latW, b.getHeight(), juce::Justification::centredRight);
 }
 
 void PluginListView::Row::mouseDown (const juce::MouseEvent& e)
@@ -134,6 +153,13 @@ PluginListView::PluginListView (AudioEngine& e) : engine (e)
     addAndMakeVisible (viewport);
 
     rebuildRows();
+    startTimer (500);   // Plugin-Latenz live halten (z. B. wenn ein Plugin Lookahead an-/abschaltet)
+}
+
+void PluginListView::timerCallback()
+{
+    for (auto* r : rows)
+        r->repaint();   // nur neu zeichnen; die Latenz wird in Row::paint frisch gelesen
 }
 
 void PluginListView::resized()
