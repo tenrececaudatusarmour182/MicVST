@@ -27,7 +27,7 @@ project follows [Semantic Versioning](https://semver.org/).
 ## [1.0.1] - 2026-06-04
 
 ### Added
-- **How To** screen — a quick setup guide with clickable links (download VB-Cable,
+- **How To** screen - a quick setup guide with clickable links (download VB-Cable,
   "Check for updates on GitHub").
 - Clickable **version number** in the main window (opens the GitHub repo).
 

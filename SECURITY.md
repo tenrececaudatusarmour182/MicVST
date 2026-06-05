@@ -16,7 +16,7 @@ interest are third-party VST3 plugins it loads and the config/log files it write
 
 ## Reporting a vulnerability
 
-Please report security issues **privately** via GitHub — do not open a public issue.
+Please report security issues **privately** via GitHub - do not open a public issue.
 
 Use **"Report a vulnerability"** in the repository's **Security** tab
 (*Security → Advisories → Report a vulnerability*). This opens a private security advisory that is

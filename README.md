@@ -4,7 +4,7 @@
 
 MicVST is a lightweight Windows tray app. It takes one microphone, runs it through the VST3
 effects you choose (EQ, de-noise, compression, …) and sends the processed signal to a **virtual
-audio cable** — which any application (Discord, OBS, Zoom, Voicemod, games, …) can then use as a
+audio cable** - which any application (Discord, OBS, Zoom, Voicemod, games, …) can then use as a
 microphone input.
 
 Think of it as a minimal alternative to VoiceMeeter / Wave Link when all you want is:
@@ -20,18 +20,18 @@ Mic  →  MicVST (your VST3 chain)  →  VB-Cable (CABLE Input → CABLE Output)
 
 ## Download
 
-Grab the latest portable build — **no installer, no dependencies**, just run the `.exe`:
+Grab the latest portable build - **no installer, no dependencies**, just run the `.exe`:
 
 **[Download MicVST.exe](https://github.com/philipz794/MicVST/releases/latest/download/MicVST.exe)**
 
 (Statically linked, x64. No Visual C++ Redistributable required.)
 
 The `.exe` is **not code-signed**, so Windows SmartScreen may warn *“Windows protected your
-PC”* — click **More info → Run anyway**. Each release lists the file’s **SHA-256** so you can
+PC”* - click **More info → Run anyway**. Each release lists the file’s **SHA-256** so you can
 verify your download (`Get-FileHash MicVST.exe -Algorithm SHA256` in PowerShell).
 
 You also need a **virtual audio cable**. The free **[VB-Cable](https://vb-audio.com/Cable/)** is
-recommended — MicVST detects it automatically. VoiceMeeter and Virtual Audio Cable work too.
+recommended - MicVST detects it automatically. VoiceMeeter and Virtual Audio Cable work too.
 
 ## Setup
 
@@ -60,7 +60,7 @@ boot (no window, engine running). For a stable setup, copy the `.exe` to a fixed
 - One mic → ordered **VST3 plugin chain** → virtual cable output
 - **Automatic cable detection** (VB-Cable / VoiceMeeter / Virtual Audio Cable) with a download hint
   when none is found
-- **Channel-aware routing** — the chain can start mono and switch to stereo at a placeable
+- **Channel-aware routing** - the chain can start mono and switch to stereo at a placeable
   **Mono → Stereo** node (so a mono noise-suppressor doesn’t cost double)
 - Horizontal **in/out level meters** with a dB scale
 - **Drag-to-reorder** plugin list, per-row bypass, remove with confirmation, per-plugin editor
@@ -76,7 +76,7 @@ boot (no window, engine running). For a stable setup, copy the `.exe` to a fixed
 
 Requires **Windows 11 x64** and **Visual Studio 2022** with the *Desktop development with C++*
 workload (MSVC + Windows SDK + CMake). JUCE is fetched automatically via CMake `FetchContent`
-(JUCE 8.0.13) — nothing else to install.
+(JUCE 8.0.13) - nothing else to install.
 
 ```powershell
 $cmake = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
@@ -101,25 +101,25 @@ machine without the Visual C++ Redistributable.
   driven by JUCE’s `AudioDeviceManager` (WASAPI shared mode).
 - Per hop, `min(source.outs, target.ins)` channels are connected, so variable channel width
   (the mono→stereo transition) is routed correctly and automatically.
-- The output device is just a normal render endpoint — pointing it at a virtual cable’s *input*
+- The output device is just a normal render endpoint - pointing it at a virtual cable’s *input*
   endpoint lets the cable’s driver loop the audio to its *output* (capture) endpoint, which other
   apps read as a microphone. No special “output plugin” needed.
 
 ## Latency
 
-MicVST adds only the **smallest buffer necessary** to run your VST3 chain — typically one 10 ms block (480 samples at 48 kHz), the standard Windows shared-audio period. There's no extra buffering on top: audio comes in, goes through your plugins, and goes straight out.
+MicVST adds only the **smallest buffer necessary** to run your VST3 chain - typically one 10 ms block (480 samples at 48 kHz), the standard Windows shared-audio period. There's no extra buffering on top: audio comes in, goes through your plugins, and goes straight out.
 
 A few things worth knowing:
 
-- **The buffer size is a single fixed value** (e.g. 480) because MicVST uses **WASAPI shared mode** — the same low-overhead path Windows uses for everything else. Windows sets one engine period for shared audio, so there's nothing to tune there, and nothing is being wasted. MicVST simply shows it (with the live end-to-end latency) under the device list.
+- **The buffer size is a single fixed value** (e.g. 480) because MicVST uses **WASAPI shared mode** - the same low-overhead path Windows uses for everything else. Windows sets one engine period for shared audio, so there's nothing to tune there, and nothing is being wasted. MicVST simply shows it (with the live end-to-end latency) under the device list.
 - **Total latency you hear is mostly downstream of MicVST.** The signal path is `Mic → MicVST → virtual cable → your app (Discord/OBS/…)`. The virtual cable and the receiving app each read through Windows shared audio too, and the cable has its own buffering. If you want to trim the cable's part, VB-Cable exposes a latency / internal-sample-rate setting in its own control panel (`VBCABLE_ControlPanel.exe`).
-- **For talking into Discord/OBS/Zoom, latency is inaudible** — your microphone signal travels one way to your listeners, so a few milliseconds never matter. (Low buffer sizes only matter when you monitor *yourself* live or play an instrument in real time, which isn't what MicVST is for.)
-- **ASIO / ASIO4All won't help here.** ASIO is built for a single exclusive in-and-out device and doesn't fit a mic-in / virtual-cable-out setup — and the receiving app would still read through shared audio anyway. MicVST is already on the most direct path Windows offers for this job.
+- **For talking into Discord/OBS/Zoom, latency is inaudible** - your microphone signal travels one way to your listeners, so a few milliseconds never matter. (Low buffer sizes only matter when you monitor *yourself* live or play an instrument in real time, which isn't what MicVST is for.)
+- **ASIO / ASIO4All won't help here.** ASIO is built for a single exclusive in-and-out device and doesn't fit a mic-in / virtual-cable-out setup - and the receiving app would still read through shared audio anyway. MicVST is already on the most direct path Windows offers for this job.
 
 ## Notes
 
 - **rnnoise** (noise suppression) is available as a VST3 here:
-  <https://github.com/werman/noise-suppression-for-voice/releases> — drop the `.vst3` into
+  <https://github.com/werman/noise-suppression-for-voice/releases> - drop the `.vst3` into
   `C:\Program Files\Common Files\VST3\` and restart. It runs at **48 kHz**; for low CPU use the
   mono variant and place it before the built-in Mono → Stereo node.
 - Third-party software (JUCE, your VST3 plugins, VB-Cable, …) is subject to its own licenses. This
@@ -127,7 +127,7 @@ A few things worth knowing:
 
 ## License
 
-MicVST is free software licensed under the **GNU General Public License v3.0** — see
+MicVST is free software licensed under the **GNU General Public License v3.0** - see
 [LICENSE](LICENSE). It uses **[JUCE](https://juce.com)**, whose free open-source tier is GPL, so
 MicVST is GPL too. Third-party software (JUCE, your VST3 plugins, VB-Cable, …) is subject to its own
 licenses; this repository contains only the MicVST source.

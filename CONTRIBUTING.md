@@ -1,6 +1,6 @@
 # Contributing to MicVST
 
-Thanks for your interest! MicVST is a small, focused Windows tool — bug reports, ideas and
+Thanks for your interest! MicVST is a small, focused Windows tool - bug reports, ideas and
 pull requests are all welcome.
 
 ## Reporting bugs / requesting features
@@ -15,8 +15,8 @@ Open an [issue](https://github.com/philipz794/MicVST/issues). For bugs, please i
 ## Building
 
 Requires **Windows 11 x64** and **Visual Studio 2022** with the *Desktop development with C++*
-workload (MSVC + Windows SDK + CMake). JUCE is fetched automatically via CMake `FetchContent`
-— nothing else to install.
+workload (MSVC + Windows SDK + CMake). JUCE is fetched automatically via CMake `FetchContent` -
+nothing else to install.
 
 ```powershell
 # Configure (fetches JUCE)
